@@ -1,0 +1,225 @@
+---
+title: 'INFX 576: Problem Set 4 - Core/Periphery Structure\footnote{Problems originally written by C.T. Butts (2009)}'
+author: "Avanti Chande"
+date: 'Due: Thursday, February 9, 2017'
+output: pdf_document
+---
+
+##### Collaborators: Jay Chauhan, Gosuddin Siddiqi, Suchitra Sundaraman
+
+##### Instructions: #####
+
+Before beginning this assignment, please ensure you have access to R and RStudio. 
+
+1. Download the `problemset4.Rmd` file from Canvas. You will also need the data contained in `problemset4_data.Rdata` and the `block.fit` function we used in class.  
+
+2. Replace the "Insert Your Name Here" text in the `author:` field with your own full name. Any collaborators must be listed on the top of your assignment. 
+
+3. Be sure to include well-documented (e.g. commented) code chucks, figures and clearly written text chunk explanations as necessary. Any figures should be clearly labeled and appropriately referenced within the text. 
+
+4. Collaboration on problem sets is acceptable, and even encouraged, but each student must turn in an individual write-up in his or her own words and his or her own work. The names of all collaborators must be listed on each assignment. Do not copy-and-paste from other students' responses or code.
+
+5. When you have completed the assignment and have **checked** that your code both runs in the Console and knits correctly when you click `Knit PDF`, rename the R Markdown file to `YourLastName_YourFirstName_ps4.Rmd`, knit a PDF and submit the PDF file on Canvas.
+
+##### Setup: #####
+
+In this problem set you will need, at minimum, the following R packages.
+
+```{r Setup, message=FALSE}
+# Load standard libraries
+library(statnet)
+load("problemset4_data.Rdata")
+load("block.fit.Rdata")
+```
+
+#### Problem 1:  Core/Periphery Structure
+
+In this problem we will use data from a famous series of studies by Bernard, Killworth, and Sailer[^2] on the relationship between observed interaction and informants self-reports of interaction. The specific networks we will use here are from the "behavioral" side, meaning that the $i,j$ cell corresponds to the number of times $i$ and $j$ were *observed* to interact during the data collection period. All interaction is these studies is interpersonal; the study contexts are: (1) communication among radio operators (`bfham`), (2) face-to-face interactions among members of a fraterity (`bkfrat`), (3) face-to-face interactions in a university research group (`bktec`), and (4) face-to-face interactions in a small business (`bkoff`). Here we investigate the possibility of latent two-class structure in these interation networks. 
+
+
+[^2]: Bernard H, Killworth P and Sailer L. (1982). Informant accuracy in social network data V. Social Science Research, 11, 30-66.
+
+
+##### (a) Network Visualization
+
+To begin visualize each network. You might find it helpful to use transparency when displaying edges using the `edge.col=rgb(0,0,0,0.5)` option of the `gplot` function. Based on each visualization, indicate whether there appears to be a two-class block structure present, and if so what it might be.
+
+```{r}
+gplot(bkham, edge.col = rgb(0,0,0,0.5))
+gplot(bkfrat, edge.col = rgb(0,0,0,0.5))
+gplot(bktec, edge.col = rgb(0,0,0,0.5))
+gplot(bkoff, edge.col = rgb(0,0,0,0.5))
+```
+Looking at the visualizations, there appears to be an undirected two-class block structure. This looks like a core-periphery structure. 
+
+##### (b) Blockmodels
+
+For each of the BKS networks, fit each of the four non-degrenerate undirected two-class blockmodels. (You may omit the null graph and complete graph blockmodels.) In addition, fit the Borgatti and Everett variant in which only within-class edges are considered. Plot each blocked data matrix with the `plot.sociomatrix` function. Comment on your results.
+
+
+```{r}
+
+#All Netoworks Core w/in, out ties
+#BKHAM Network 
+bkh1<-block.fit(bkham,c(1,1,1,0))   # Core w/in,out ties
+  lab<-bkh1$block.membership[bkh1$order.vector]
+  plot.sociomatrix(bkh1$blocked.data,labels=list(lab,lab))
+  title(main="communication among radio operators")
+  summary(bkh1$blocked.data)
+  
+#BKTEC Network
+bkt1 <- block.fit(bktec,c(1,1,1,0))   # Core w/in,out ties
+  lab<-bkt1$block.membership[bkt1$order.vector]
+  plot.sociomatrix(bkt1$blocked.data,labels=list(lab,lab))
+  title(main="face-to-face interactions among members of a fraterity")
+
+#BKFRAT Network 
+bkf1<-block.fit(bkfrat,c(1,1,1,0))   # Core w/in,out ties
+  lab<-bkf1$block.membership[bkf1$order.vector]
+  plot.sociomatrix(bkf1$blocked.data,labels=list(lab,lab))
+  title(main="face-to-face interactions in a university research group")
+  
+#BKOFF Network
+bko1 <- block.fit(bkoff,c(1,1,1,0))   # Core w/in,out ties
+  lab<-bko1$block.membership[bko1$order.vector]
+  plot.sociomatrix(bko1$blocked.data,labels=list(lab,lab))
+  title(main="face-to-face interactions in a small business")
+
+```
+
+In the first network,communication among radio operators (bkham), the core periphery structure is strong. Within periphery interaction is lesser as compared to the other networks. This means that the interactions among radio operators are divided into a core and a periphery.
+
+Later, the BKTEC and BKFRAT have a less stronger separation between core and periphery.
+
+The last network, face-to-face interactions in a small business(bkoff), the core periphery structure seems to be weak. This means that there is an even interaction pattern across the small businesses.
+
+
+```{r}
+
+#All Networks - Core to/from periphery ties
+
+#BKHAM 
+bkh2<-block.fit(bkham,c(0,1,1,0))   
+  lab<-bkh2$block.membership[bkh2$order.vector]
+  plot.sociomatrix(bkh2$blocked.data,labels=list(lab,lab))
+
+#BKFRAT
+bkf2<-block.fit(bkfrat,c(0,1,1,0))  
+  lab<-bkf2$block.membership[bkf2$order.vector]
+  plot.sociomatrix(bkf2$blocked.data,labels=list(lab,lab))
+  
+#BKTEC
+  bkt2<-block.fit(bktec,c(0,1,1,0))   
+  lab<-bkt2$block.membership[bkt2$order.vector]
+  plot.sociomatrix(bkt2$blocked.data,labels=list(lab,lab))
+  
+#BKOFF
+  bko2<-block.fit(bkoff,c(0,1,1,0)) 
+  lab<-bko2$block.membership[bko2$order.vector]
+  plot.sociomatrix(bko2$blocked.data,labels=list(lab,lab))
+
+```
+
+The core-periphery ties vary widely in the 4 BKS networks. The interactions are lesser in the BKHAM network, and go on increasing in BKFRAT, BKTEC and BKOFF networks.
+
+```{r}
+
+#All netrworks - Isolated Core
+
+#BKHAM Network
+bkh4<-block.fit(bkham,c(1,0,0,0))   # Isolated core
+  lab<-bkh4$block.membership[bkh4$order.vector]
+  plot.sociomatrix(bkh4$blocked.data,labels=list(lab,lab))
+
+#BKFRAT Network
+bkf4<-block.fit(bkfrat,c(1,0,0,0))   # Isolated core
+  lab<-bkf4$block.membership[bkf4$order.vector]
+  plot.sociomatrix(bkf4$blocked.data,labels=list(lab,lab))
+
+#BKTEC network
+bkt4<-block.fit(bktec,c(1,0,0,0))   # Isolated core
+  lab<-bkt4$block.membership[bkt4$order.vector]
+  plot.sociomatrix(bkt4$blocked.data,labels=list(lab,lab))
+  
+#BKOFF network
+bko4<-block.fit(bkoff,c(1,0,0,0))   # Isolated core
+  lab<-bko4$block.membership[bko4$order.vector]
+  plot.sociomatrix(bko4$blocked.data,labels=list(lab,lab))
+
+```
+
+Within core interactions are the most clearly identifiable in the BKHAM network, mainly because it has a strong core-periphery seperation. For the rest of the networks, it is less clear. 
+
+```{r}
+
+#All networks - Borgatti - Everett Variant
+
+#BKHAM Network
+bkh5 <- block.fit(bkham,c(1,0,0,1))   # Borgatti - Everett Variant
+  lab<-bkh5$block.membership[bkh5$order.vector]
+  plot.sociomatrix(bkh5$blocked.data,labels=list(lab,lab))
+  bkh5$block.gof
+  
+#BKFRAT Network
+bkf5 <- block.fit(bkfrat,c(1,0,0,1))   # Borgatti - Everett Variant
+  lab<-bkf5$block.membership[bkh5$order.vector]
+  plot.sociomatrix(bkf5$blocked.data,labels=list(lab,lab))
+  bkf5$block.gof
+
+#BKTEC Network
+bkt5 <- block.fit(bktec,c(1,0,0,1))   # Borgatti - Everett Variant
+  lab<-bkt5$block.membership[bkt5$order.vector]
+  plot.sociomatrix(bkt5$blocked.data,labels=list(lab,lab))
+  bkt5$block.gof
+
+#BKOFF Network  
+bko5 <- block.fit(bkoff,c(1,0,0,1))   # Borgatti - Everett Variant
+  lab<-bko5$block.membership[bko5$order.vector]
+  plot.sociomatrix(bko5$blocked.data,labels=list(lab,lab))
+  bko5$block.gof
+
+```
+
+The within core interactions in the BKHAM and not many interactions within peripheral class. The BKOFF network on the other hand, shows a good interaction  within the periphery.
+
+##### (c) Goodness-of-Fit
+
+Examine the goodness-of-fit scores (in this case, maximized correlations) for each model on each network. Which model fits best (among those which seek to explain all edges)? How much variance is accounted for by each model?
+```{r}
+#With in/out ties
+bkh1$block.gof
+bkf1$block.gof
+bkt1$block.gof
+bko1$block.gof
+
+#With core-periphery ties
+bkh2$block.gof
+bkf2$block.gof
+bkt2$block.gof
+bko2$block.gof
+
+#Isolated core
+bkh4$block.gof
+bkf4$block.gof
+bkt4$block.gof
+bko4$block.gof
+
+#Borgatti - Everett
+bkh5$block.gof
+bkf5$block.gof
+bkt5$block.gof
+bko5$block.gof
+```
+The model variant that seeks to explain all the edges is the core with in/out ties(1,1,1,0). The goodness of fit is the best for the BKFRAT network. 42% of the variability in this network is explained by the model. Therefore, the core in/out model fits best.For other networks it is in between 21% to 36%.
+
+The model variant with core-periphery ties explains between 16% to 37% of the variance in all the networks.
+
+The model variant with Isolated core, (1,0,0,0), explains 33% to 69% of the variance in all the networks.
+
+The model variant with Borgatti-Everett (1,0,0,1), explains 19% to 31% of the variance in all the networks.
+
+##### (c) Discussion
+
+Based on the above results, how would you describe the overall structure of these data sets? Are they ultimately similar in form or are there notable differences?
+
+The BKHAM network shows a clear separation between the core and periphery. This network is a clear seperation from BKFRAT, BKTEC networks, where there is much more interaction beween core and periphery. BKOFF network doesnt seem to have a clear separation between the core and periphery. This means that the BFOFF network is homogenously connected, and the face-to-face interactions in a small business is homogenous. Thus, the overall structure is a 2 block structure, with a range of interactions within core, within periphery and between core and periphery.

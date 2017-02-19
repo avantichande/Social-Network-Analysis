@@ -1,0 +1,326 @@
+---
+title: 'INFX 576: Problem Set 5 - Cohesive Groups and Graph Sets\footnote{Problems originally written by C.T. Butts (2009)}'
+author: "Avanti Chande"
+date: 'Due: Thursday, February 16, 2017'
+output: pdf_document
+---
+
+##### Collaborators: Jay Chauhan, Gosuddin Siddiqi
+
+##### Instructions: ####
+
+Before beginning this assignment, please ensure you have access to R and RStudio. 
+
+1. Download the `problemset5.Rmd` file from Canvas. You will also need the data from last week's Problem Set 4 in `problemset4_data.Rdata`.  
+
+2. Replace the "Insert Your Name Here" text in the `author:` field with your own full name. Any collaborators must be listed on the top of your assignment. 
+
+3. Be sure to include well-documented (e.g. commented) code chucks, figures and clearly written text chunk explanations as necessary. Any figures should be clearly labeled and appropriately referenced within the text. 
+
+4. Collaboration on problem sets is acceptable, and even encouraged, but each student must turn in an individual write-up in his or her own words and his or her own work. The names of all collaborators must be listed on each assignment. Do not copy-and-paste from other students' responses or code.
+
+5. When you have completed the assignment and have **checked** that your code both runs in the Console and knits correctly when you click `Knit PDF`, rename the R Markdown file to `YourLastName_YourFirstName_ps5.Rmd`, knit a PDF and submit the PDF file on Canvas.
+
+##### Setup: #####
+
+In this problem set you will need, at minimum, the following R packages.
+
+```{r Setup, message=FALSE, warnings=FALSE}
+# Load standard libraries
+library(statnet)
+load("problemset5_data.Rdata")
+```
+
+#### Problem 1: Cohesive Subgroups ####
+
+In this problem we use data collected by Krackhardt (1987), `kfr` capturing self-reported friendship ties among 21 managers in a high-tech firm. This data is directed and unvalued, it is possible for $i$ to nominate $j$ as a friend without reciprocation.
+
+##### (a) Cliques ##### 
+
+Using the `clique.census` command, perform the following analyses on `kfr`:
+
+* Obtain a length-tabulation of clique membership by vertex.
+
+```{r}
+#Plotting the data
+gplot(kfr)
+
+#Clique Census
+kfr1<-clique.census(kfr,tabulate.by.vertex = TRUE)
+
+#Length Tabulation
+kfr1$clique.count
+names(kfr1)
+```
+
+
+* Obtain the combined clique co-membership matrix.
+
+```{r}
+#Combined Clique co-membership matrix
+kfr2<- clique.census(kfr,clique.comembership="sum")
+kfr2$clique.comemb
+```
+
+
+* Use the clique co-membership matrix to obtain a cohesion-based blockmodel of `kfr`. You may find the commands `hclust` `cutree` and `blockmodel` helpful here. Show the dendrogram (with cutoff value), block image matrix, and block image.
+
+```{r}
+#Dendograms
+csco<-clique.census(kfr,clique.comembership="sum")$clique.comemb
+kfr3<-hclust(as.dist(1/(csco+1)))
+plot(kfr3)
+rect.hclust(kfr3,h=0.8)                              # Plot a cutoff point
+ct<-cutree(kfr3,h=0.8)                               # Cut the clusters
+class(ct)
+
+gplot(kfr,vertex.col=ct)                             # Visualize directly
+legend("topleft",fill=(ct),legend=ct,bty="n")        # Adding Legend
+
+plot.sociomatrix(kfr[order(ct),order(ct)])           #Plot the Sociomatrix
+
+
+#Blockmodel
+bm<-blockmodel(kfr,ct)
+bm
+
+#Plot the Blockmodel
+gplot(bm$block.model,vertex.cex=table(ct),
+      edge.lwd=6*bm$block.model, usearrows=TRUE,
+  diag=TRUE)  
+```
+
+
+
+##### (b) K-Cores #####
+
+Use the `kcores` command to calculate the total degree $k$-cores of `kfr`. Visualize the network, indicating by size, shape, or color the core number for each vertex.
+
+```{r}
+kfr4 <- kcores(kfr)   
+
+#Tabulating the Output
+table(kfr4)
+
+#There are 3, 5, 6 and 7 k-cores. Plotting them below.
+gplot(kfr,vertex.col=heat.colors(max(kfr4)+1)[kfr4+1])
+title(main = "k-core KFR Network")
+
+# Plotting 5-core network
+gplot(kfr[kfr4>3,kfr4>3],vertex.col=heat.colors(max(kfr4[kfr4>3])+1)[kfr4[kfr4>3]+1])
+title(main = "5-core KFR Network")
+
+#Plotting 6-core network
+gplot(kfr[kfr4>5,kfr4>5],vertex.col=heat.colors(max(kfr4[kfr4>5])+1)[kfr4[kfr4>5]+1])
+title(main = "6-core KFR Network")
+
+#Plotting 7-core network
+gplot(kfr[kfr4>6,kfr4>6],vertex.col=heat.colors(max(kfr4[kfr4>6])+1)[kfr4[kfr4>6]+1])
+title(main = "7-core KFR Network")
+
+```
+
+
+##### (c) Discussion #####
+
+Based on the anlaysis in parts (a) and (b), how would you summarize the structure of this network; in particular, how many distinct dense clusters do there appear to be?
+
+Ans. Based on clique census, dendograms and blockmodel, there don't seem to be any dense  clusters in this network. There are different colors in the plot for each vertex which proves that there are no particularly dense clusters. 
+
+#### Problem 2:  Graph Correlation ####
+
+Last week, we saw network data from the famous Bernard, Killworth, and Sailer (BKS) studies. These studies examined the issue of accuracy in self-reported network data. Each study involved a group of subjects, each of whom was asked to rank-order all other group members by frequency of interaction. The self-reported interaction frequency was referred to as the "cognitive" ntework by BKS (i.e. the network as understood by the subjects themeselves). During the study period, behavioral information on interaction within the same groups was also collected via trained observers. The network of observed pairwise interaction frequencies was referred to as the "behavioral" network. Accuracy was assessed by comparing the "cognitive" and "behavioral" networks. The BKS studies were controversial and launched a much larger literature on the accuracy of network measurement.
+
+##### (a) Comparing Networks #####
+
+For each of the data objects `bkfrat`, `bkham`, `bkoff` and `bktec` (each itself a list containing the cognitive and behavioral network from a BKS study) perform a QAP test of the correlation between the self-report and the observed structure. Show in each case the test results, including a plot of the QAP replicates. 
+
+```{r}
+#BKFRAT Networks
+gplot(bkfrat$Behavioral)
+title(main = "BKFRAT Behavioral")
+gplot(bkfrat$Cognitive)
+title(main = "BKFRAT Cognitive")
+
+#Correlation
+bkfrat_cor <- gcor(bkfrat$Cognitive, bkfrat$Behavioral)
+bkfrat_cor
+
+# qaptest routine
+bkfrat_qt<-qaptest(list(bkfrat$Cognitive, bkfrat$Behavioral),gcor,g1=1,g2=2)
+summary(bkfrat_qt)                                       # Examine the results
+
+#Comparing with QAP Permutation
+plot(bkfrat_qt, xlim=c(-0.5,0.8), col="blue")  
+abline(v=bkfrat_qt$testval, col="red")
+```
+
+```{r}
+#BKHAM
+gplot(bkham$Behavioral)
+title(main = "BKHAM Behavioral")
+gplot(bkham$Cognitive)
+title(main = "BKHAM Cognitive")
+
+#Correlation
+bkham_cor <- gcor(bkham$Cognitive, bkham$Behavioral)
+
+bkham_cor
+
+# qaptest routine
+bkham_qt<-qaptest(list(bkham$Cognitive, bkham$Behavioral),gcor,g1=1,g2=2)
+summary(bkham_qt)                                     
+plot(bkham_qt, xlim=c(-0.2,0.8), col="blue")
+
+#Comparing with QAP Permutation
+abline(v=bkham_qt$testval, col="red")
+
+```
+
+```{r}
+#BKTEC
+gplot(bktec$Behavioral)
+title(main = "BKTEC Behavioral")
+gplot(bktec$Cognitive)
+title(main = "BKTEC Cognitive")
+
+#Correlation
+bktec_cor <- gcor(bktec$Cognitive, bktec$Behavioral)
+
+bktec_cor
+
+# qaptest routine
+bktec_qt<-qaptest(list(bktec$Cognitive, bktec$Behavioral),gcor,g1=1,g2=2)
+summary(bktec_qt)                                       # Examine the results
+
+#Comparing with QAP Permutation
+plot(bktec_qt, xlim=c(-0.6,0.8), col="blue")
+abline(v= bktec_qt$testval, col="red")
+
+```
+
+```{r}
+#BKOFF
+gplot(bkoff$Behavioral)
+title(main = "BKOFF Behavioral")
+gplot(bkoff$Cognitive)
+title(main = "BKOFF Cognitive")
+
+#Correlation
+bkoff_cor <- gcor(bkoff$Cognitive, bkoff$Behavioral)
+
+bkoff_cor
+
+# qaptest routine
+bkoff_qt<-qaptest(list(bkoff$Cognitive, bkoff$Behavioral),gcor,g1=1,g2=2)
+summary(bkoff_qt)                                       # Examine the results
+
+#Comparing with QAP Permutation
+plot(bkoff_qt, xlim=c(-0.4,0.5), col="blue")
+abline(v=bkoff_qt$testval, col="red")
+
+```
+
+
+##### (b) Discussion #####
+
+Use the results from part (a) to provide your own assessment of the extent to which the data does or does not show general agreement between observation and informant report. 
+
+Ans. As can be seen from the plots, the networks show significant departure from the QAP test permutations.
+
+For BKFRAT and BKHAM networks, there is an agreement between the cognitive and observational report of interactions. For BKFRAT, correlation co-efficient is 0.37 and for BKHAM, its 0.52.Thus, BKHAM network shows more agreement than the BKFRAT network. 
+
+For BKTEC and BKOFF networks, there is a negative association between the cognitive and observational report of interactions. For BKTEC the correlation co-efficient is -0.42 which is lesser than the coefficient for BKOFF network (-0.34). This means that if an inofrmant shows an opposite report of interaction than an observer.  
+
+##### (c) Observation and Networks #####
+
+What reliability or validity issues might arise in the BKS studies if the observed report data is taken to be the true "behavioral" network?
+
+Ans. If the observational report is taken to be the true "behavioral" network, there will be a discrepancy in the report of interactions actually occurred. There will not be an actual measure of the interactions and the reports of the observants will be subjective and biased. For example, in the BKTEC and BKOFF networks, it was observed that the cognitive and observational reports were in disagreement.Thus, the reliability of the research conducted on these kind of observations will be poor and might lead incorrect conclusions about network metrics like Betweenness and Degree. Another observer might have a different report on the interactions and might agree with the cognitive report.
+
+#### Problem 3:  Multivariate Analysis of Network Sets ####
+
+For this problem we will use data on international trade, called `trade` in the data for this problem set. This data captures trade in various types of products/materials among countries. You will want to explore the data before answering these questions, to ensure you understand what is present.
+
+```{r}
+#Plotting the Trade data
+gplot(trade)
+row.names(trade)
+class(trade[1,,])
+colnames(trade)
+str(trade)
+
+#its a 3 dimensional array. 
+```
+
+
+##### (a) Clustering #####
+
+Show a hierarchical clustering of the trade networks, based on the Hamming distance. Compare this with a two-dimensional MDS solution on the same data.
+
+```{r}
+#Hamming Distance clustering
+trade_hdist <- hdist(trade)
+
+#Plot the Results
+plot(trade_hdist, type = 'l', lty=2, col=3)
+text(trade_hdist,label=rownames(trade),font=2)
+
+#MDS solution
+trade_mds <- cmdscale(trade_hdist)
+trade_mds
+
+# Plot the results
+plot(trade_mds,type="l",lty=2, col=2) 
+text(trade_mds,label=rownames(trade),font=2)
+
+```
+
+```{r}
+# MDS suggests a three-cluster solution; let's try hclust
+trade_hc<-hclust(as.dist(trade_hdist))
+plot(trade_hc,labels=row.names(trade))          
+rect.hclust(trade_hc,k=3.5)
+
+```
+
+
+##### (b) PCA #####
+
+Conduct a PCA on the trade networks. How many dimensions are needed to account for the bulk of the variation in these networks? Try using a scree plot to help with this question. Plot the loadings on the first two components; what does this suggest about the undering relationships among the trade networks?
+```{r}
+#Correlations
+trade_cor <- gcor(trade)
+trade_cor
+
+#Eigen vectors
+trade_eig<-eigen(trade_cor)
+trade_eig
+
+# Eigenvalues contain variance explained:
+evals<-trade_eig$value                                   # Extract eigenvalues
+evals
+evals/sum(evals)    
+
+# Showing this as a scree plot
+barplot(evals/sum(evals),names.arg=1:length(evals))
+
+load<-trade_eig$vector[,1:3]
+rownames(load)<-row.names(trade)
+load
+
+# Plotting the first two components
+plot(load[,1:2],type="n",asp=1,xlab="PC 1",ylab="PC 2")
+abline(h=0,v=0,lty=3)
+arrows(0,0,load[,1],load[,2],col=2)          
+text(load[,1:2],label=row.names(trade))
+
+```
+
+Ans. As evident in the scree plot, more than 60% of the variance in the network is explained by dimension 1 i.e Minerals. The 2nd dimension explains 15% of the variance. Thus, two dimensions are enough to account for the variation in this network. The variation in the underlying trade network structure can be explained maximally on the basis of mineral trade among the countries. 
+
+##### (c) Discussion #####
+
+Compare your PCA results to those obtained using MDS. In what ways are they similar? Different?
+
+The MDS structure created a euclidean distance in which trades with similar patterns are grouped approximately. The plot of the MDS solution shows that there the Minerals trade data is far away from the rest of the network; this proves that the Minerals trade data is unique. It is further explained in the PCA network, which shows that the maximum variance in the trade network is explained by the Minerals trade among the 24 countries. 

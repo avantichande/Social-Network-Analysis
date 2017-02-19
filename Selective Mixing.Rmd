@@ -1,0 +1,257 @@
+---
+title: 'INFX 576: Problem Set 3 - Selective Mixing\footnote{Problems originally written by C.T. Butts (2009)}'
+author: "Avanti Chande"
+date: 'Due: Thursday, February 2, 2017'
+output: pdf_document
+---
+
+
+##### Collaborators: Jay Chauhan, Gosuddin Siddiqi 
+
+##### Instructions: #####
+
+Before beginning this assignment, please ensure you have access to R and RStudio. 
+
+1. Download the `problemset3.Rmd` file from Canvas.
+
+2. Replace the "Insert Your Name Here" text in the `author:` field with your own full name. Any collaborators must be listed on the top of your assignment. 
+
+3. Be sure to include well-documented (e.g. commented) code chucks, figures and clearly written text chunk explanations as necessary. Any figures should be clearly labeled and appropriately referenced within the text. 
+
+4. Collaboration on problem sets is acceptable, and even encouraged, but each student must turn in an individual write-up in his or her own words and his or her own work. The names of all collaborators must be listed on each assignment. Do not copy-and-paste from other students' responses or code.
+
+5. When you have completed the assignment and have **checked** that your code both runs in the Console and knits correctly when you click `Knit PDF`, rename the R Markdown file to `YourLastName_YourFirstName_ps3.Rmd`, knit a PDF and submit the PDF file on Canvas.
+
+##### Setup: #####
+
+In this problem set you will need, at minimum, the following R packages.
+
+```{r Setup, message=FALSE}
+# Load standard libraries
+library(statnet)
+library(plyr)
+```
+
+#### Problem 1: Selective Mixing
+
+We will begin with an examination of selective mixing in the Drabek et al. EMON data (which can be accessed in the `network` package via the command `data(emon)`). Recall the `emon` object is a list of seven networks, such that `emon[[1]]` is the $i$th network object. (See `?emon` for details regarding the dataset.) 
+```{r}
+data(emon)
+```
+
+
+
+##### (a) Visualizing Networks
+
+This data set consists of seven individual network data sets of emergent multiorganizational networks (EMONs) in the context of search and rescue activities. These data sets are: the Cheyenne SAR EMON, the Hurricane Frederic SAR EMON, the Lake Pomona SAR EMON, the Mt. Si SAR EMON, the Mt. St. Helens SAR EMON, the Texas Hill Country SAR EMON, and the Wichita Falls SAR EMON. We interpret the relationships in each of these networks as one of salient communication. 
+
+To begin, plot each of the seven networks, coloring vertices by the "Sponsorship" vertex attribute. With each plot, include a legend showing how sponsorship is colored. Comment on what you see.
+
+```{r}
+names_emon = names(emon)
+
+for (i in 1:7) {
+  plot(emon[[i]],vertex.col="Sponsorship")
+  title(main = names_emon[i])
+  vals<-sort(unique(emon[[i]]%v%"Sponsorship"))   # Let's add a legend....
+  legend("topleft",fill=1:length(vals),legend=vals,bty="n")
+}
+  
+```
+
+1. There is no selective mixing observed in the network of Cheyenne SAR EMON. 
+2. The HurrFrederic network shows some level of homophily between organizations sponsored at city and county level.
+3. LakePamona again doesn't show any selective mixing
+4. MtSi network shows some level of homophily among organizations sponsored at private level.
+5. No selective mixing observed among organizations at any level in the MtStHelens network.
+6. The texas network also does not exhibit any selective mixing
+7. 
+
+
+Most organizations report interaction at city level. 
+
+Most organization in the Lake Pamola report interaction with organizations at state level.
+
+
+##### (b) Dyadic Mixing
+
+Using the `mixingmatrix` command, obtain mixing matrices for all seven EMONs using "Sponsorship" as the relevant vertex attribute. For each network provide:
+
+* The raw mixing matrix.
+```{r}
+Cheyenne = mixingmatrix(emon[[1]], "Sponsorship")
+Hurricane_Frederic = mixingmatrix(emon[[2]], "Sponsorship")
+Lake_Pomona = mixingmatrix(emon[[3]], "Sponsorship")
+Mt_Si = mixingmatrix(emon[[4]], "Sponsorship")
+Mt_Helens = mixingmatrix(emon[[5]], "Sponsorship")
+Texas_Hill = mixingmatrix(emon[[6]], "Sponsorship")
+Wichita = mixingmatrix(emon[[7]], "Sponsorship")
+
+```
+
+
+* The matrix of mixing rates/block densities (this was called $r$ in class).
+
+```{r}
+
+#Frequency Counts of the Sponsorship attribute in each of the EMON networks
+Cheyenne_f = count(get.vertex.attribute(emon[[1]], "Sponsorship"))
+Hurricane_Frederic_f = count(get.vertex.attribute(emon[[2]], "Sponsorship"))
+Lake_Pomona_f = count(get.vertex.attribute(emon[[3]], "Sponsorship"))
+Mt_Si_f = count(get.vertex.attribute(emon[[4]], "Sponsorship"))
+Mt_Helens_f = count(get.vertex.attribute(emon[[5]], "Sponsorship"))
+Texas_Hill_f = count(get.vertex.attribute(emon[[6]], "Sponsorship"))
+Wichita_f = count(get.vertex.attribute(emon[[7]], "Sponsorship"))
+
+```
+
+```{r}
+#Function for Possible Ties
+possible_ties <- function(x) {
+  mat1 = matrix(0, nrow = NROW(x), ncol = NROW(x))
+  
+  for (i in 1:nrow(mat1)){
+    for(j in 1:ncol(mat1)){
+      if (i == j) {
+        mat1[i,j] = x[i,2] * (x[i,2] - 1)
+      }
+      else{
+        mat1[i,j] = x[i,2] * x[j,2]
+      }
+    }
+  }
+ return (mat1)
+}
+
+```
+
+```{r}
+#Calling the functions for possible ties
+Cheyenne_pt = possible_ties(Cheyenne_f)
+Hurricane_Frederic_pt = possible_ties(Hurricane_Frederic_f)
+Lake_Pomona_pt = possible_ties(Lake_Pomona_f)
+Mt_Si_pt = possible_ties(Mt_Si_f)
+Mt_Helens_pt = possible_ties(Mt_Helens_f)
+Texas_Hill_pt = possible_ties(Texas_Hill_f)
+Wichita_pt = possible_ties(Wichita_f)
+
+```
+
+```{r}
+
+#Block Density Function 
+block_densities <- function(x,y){
+  bd = x/y
+  return (bd)
+}
+
+```
+
+
+```{r}
+#Calling Block Densities
+Cheyenne_bd = block_densities(Cheyenne$matrix, Cheyenne_pt)
+Cheyenne_bd
+Hurricane_Frederic_bd = block_densities(Hurricane_Frederic$matrix, Hurricane_Frederic_pt)
+Hurricane_Frederic_bd
+Lake_Pomona_bd = block_densities(Lake_Pomona$matrix, Lake_Pomona_pt)
+Lake_Pomona_bd
+Mt_Helens_bd = block_densities(Mt_Helens$matrix, Mt_Helens_pt)
+Mt_Helens_bd
+Texas_Hill_bd = block_densities(Texas_Hill$matrix, Texas_Hill_pt)
+Texas_Hill_bd
+Wichita_bd = block_densities(Wichita$matrix, Wichita_pt)
+Wichita_bd
+Mt_Si_bd = block_densities(Mt_Si$matrix, Mt_Si_pt)
+Mt_Si_bd
+```
+
+
+* The matrix of marginal $z$-scores, using the Poisson approximation. 
+
+```{r}
+calculate_zscore <- function(observed_matrix) {
+  row_sums = rowSums(observed_matrix)
+  col_sums = colSums(observed_matrix)
+  gr_sum = sum(observed_matrix)
+  
+  expected_matrix = matrix(0, nrow = NROW(observed_matrix), ncol = NROW(observed_matrix))
+  diff = matrix(0, nrow = NROW(observed_matrix), ncol = NROW(observed_matrix))
+  zscore = matrix(0, nrow = NROW(observed_matrix), ncol = NROW(observed_matrix))
+  
+  for (i in 1:length(row_sums)){
+    for (j in 1:length(col_sums)){
+    
+      expected_matrix[i,j] = row_sums[i] * col_sums[j] /gr_sum
+    }
+  }
+  
+  diff = observed_matrix - expected_matrix
+  zscore = diff/sqrt(expected_matrix)
+  return (zscore)
+}
+```
+
+
+```{r}
+#Calling the Expected Matrix
+
+Cheyenne_z = calculate_zscore(Cheyenne$matrix)
+Cheyenne_z 
+Hurricane_Frederic_z = calculate_zscore(Hurricane_Frederic$matrix)
+Hurricane_Frederic_z
+Lake_Pomona_z = calculate_zscore(Lake_Pomona$matrix)
+Lake_Pomona_z
+Mt_Si_z = calculate_zscore(Mt_Si$matrix)
+Mt_Si_z
+Mt_Helens_z = calculate_zscore(Mt_Helens$matrix)
+Mt_Helens_z
+Texas_Hill_z = calculate_zscore(Texas_Hill$matrix)
+Texas_Hill_z
+Wichita_z = calculate_zscore(Wichita$matrix)
+Wichita_z
+class(Wichita_z)
+```
+
+
+* A plot of the reduced form blockmodel, with edge widths set based on mixing rates.
+
+```{r}
+
+gplot(abs(Cheyenne_z)>2,edge.col=sign(Cheyenne_z)+3,label=rownames(Cheyenne_z),boxed.lab=FALSE,diag=TRUE)
+gplot(abs(Cheyenne_bd)>0.5,edge.col=sign(Cheyenne_bd)+3,label=rownames(Cheyenne_bd),boxed.lab=FALSE,diag=TRUE)
+
+gplot(abs(Hurricane_Frederic_z)>2,edge.col=sign(Hurricane_Frederic_z)+3,label=rownames(Hurricane_Frederic_z),boxed.lab=FALSE,diag=TRUE)
+gplot(abs(Hurricane_Frederic_bd)>0.5,edge.col=sign(Hurricane_Frederic_bd)+3,label=rownames(Hurricane_Frederic_bd),boxed.lab=FALSE,diag=TRUE)
+
+gplot(abs(Lake_Pomona_z)>2,edge.col=sign(Lake_Pomona_z)+3,label=rownames(Lake_Pomona_z),boxed.lab=FALSE,diag=TRUE)
+gplot(abs(Lake_Pomona_bd)>0.5,edge.col=sign(Lake_Pomona_bd)+3,label=rownames(Lake_Pomona_bd),boxed.lab=FALSE,diag=TRUE)
+
+gplot(abs(Mt_Si_z)>2,edge.col=sign(Mt_Si_z)+3,label=rownames(Mt_Si_z),boxed.lab=FALSE,diag=TRUE)
+gplot(abs(Mt_Si_bd)>0.5,edge.col=sign(Mt_Si_bd)+3,label=rownames(Mt_Si_bd),boxed.lab=FALSE,diag=TRUE)
+
+gplot(abs(Mt_Helens_z)>2,edge.col=sign(Mt_Helens_z)+3,label=rownames(Mt_Helens_z),boxed.lab=FALSE,diag=TRUE)
+gplot(abs(Mt_Helens_bd)>0.5,edge.col=sign(Mt_Helens_bd)+3,label=rownames(Mt_Helens_bd),boxed.lab=FALSE,diag=TRUE)
+
+gplot(abs(Texas_Hill_z)>2,edge.col=sign(Texas_Hill_z)+3,label=rownames(Texas_Hill_z),boxed.lab=FALSE,diag=TRUE)
+gplot(abs(Texas_Hill_bd)>0.5,edge.col=sign(Texas_Hill_bd)+3,label=rownames(Texas_Hill_bd),boxed.lab=FALSE,diag=TRUE)
+
+gplot(abs(Wichita_z)>2,edge.col=sign(Wichita_z)+3,label=rownames(Wichita_z),boxed.lab=FALSE,diag=TRUE)
+gplot(abs(Wichita_bd)>0.5,edge.col=sign(Wichita_bd)+3,label=rownames(Wichita_bd),boxed.lab=FALSE,diag=TRUE)
+
+
+```
+
+
+* A disucssion of your findings.
+1. Keeping a threshold of 0.5 for the block densities, we see that some network interactions show a value above 0.5 which means that there is a good tie probability between them. For example, in the Cheyenne network, the block density of the organizations sponsored at state at County/City level and Private level is 0.75. This means that the probability of ties between these two organizations are strong.
+2. The z-score values show us deviations from mixing rate distribution of the expected network matrices (standard). All the networks except the Wichita network show normal ranges of z-score values. The Wichita network shows a significant departure and hence is an unusual network.
+
+
+##### (c) Discussion
+
+Based on your analysis in parts (a)-(b) how would you describe the overall pattern of communication mixing in the Drabek et al. SAR EMONs?
+
+1. From the plots of the network structures, we see that that the networks in the Drabek et al. SAR EMONS have few cases of selective mixing. Rest of the networks are heterogenous with interactions among organizations at different levels. 
+
+2. Looking at the block densities, we see that the commmunication mixing between organizations with high block densities(>0.5) tend to include interactions among state and privately sponsored organizations.
