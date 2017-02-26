@@ -1,7 +1,6 @@
 ---
-title: 'INFX 576: Problem Set 6  - Estimating Networks\footnote{Problems originally written by C.T. Butts (2009)}'
-author: "Insert Your Name Here"
-date: 'Due: Thursday, February 23, 2017'
+title: 'Estimating Networks\footnote{Problems originally written by C.T. Butts (2009)}'
+author: "Avanti Chande"
 output: pdf_document
 ---
 
@@ -9,22 +8,8 @@ output: pdf_document
 
 ##### Instructions: #####
 
-Before beginning this assignment, please ensure you have access to R and RStudio. 
-
-1. Download the `problemset6.Rmd` file from Canvas. You will also need the data contained in `problemset6_data.Rdata` and the additional R library `degreenet`.  
-
-2. Replace the "Insert Your Name Here" text in the `author:` field with your own full name. Any collaborators must be listed on the top of your assignment. 
-
-3. Be sure to include well-documented (e.g. commented) code chucks, figures and clearly written text chunk explanations as necessary. Any figures should be clearly labeled and appropriately referenced within the text. 
-
-4. Collaboration on problem sets is acceptable, and even encouraged, but each student must turn in an individual write-up in his or her own words and his or her own work. The names of all collaborators must be listed on each assignment. Do not copy-and-paste from other students' responses or code.
-
-5. When you have completed the assignment and have **checked** that your code both runs in the Console and knits correctly when you click `Knit PDF`, rename the R Markdown file to `YourLastName_YourFirstName_ps6.Rmd`, knit a PDF and submit the PDF file on Canvas.
 
 ##### Setup: #####
-
-In this problem set you will need, at minimum, the following R packages.
-
 ```{r Setup, message=FALSE}
 # Load standard libraries
 library(statnet)
